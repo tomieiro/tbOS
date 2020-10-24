@@ -1,29 +1,20 @@
 	BITS 16
-start:
+	ORG 0
+
+START:
 	mov sp, 0x8000
 	mov ax, 07C0h
 	mov ds, ax
-	mov si, start_string
-	call print_string
-	jmp end
-
-;;Function to print a string
-;;args: si - string to print
-print_string:
-	mov ah, 0eh
-.repeat:
-	lodsb
-	cmp al, 0x0
-	je .done
-	int 10h
-	jmp .repeat
-.done:
-	ret
-
-start_string db 'Azul eh a cor do ceu !', 0x0a, 0x0d, 0x0
-
-end:
-	;;jmp start
+	mov ah, 0x02
+	mov cl, 0x02
+	mov al, 1
+	mov ch, 0x00 
+	mov dh, 0x00
+	xor bx, bx
+	mov es, bx
+	mov bx, 0x8000
+	int 0x13
+	jmp 0x0000:0x8000
 
 times 510-($-$$) db 0
 dw 0xaa55

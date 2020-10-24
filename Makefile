@@ -1,32 +1,20 @@
-STICK = /dev/sdb
+all: iso
+	@printf "Criando iso...\n"
 
-MBR = bootloader.bin
-QEMU=qemu-system-i386
-ISO = boot.iso
-FLOPPY = floppy.img
+compile:
+	@nasm	-O0	bootloader.asm	-f	bin	-o	bootloader.bin
+	@nasm	-O0	kernel.asm	-f	bin	-o	kernel.bin
+	@cat	bootloader.bin	kernel.bin	>	tbOS.bin
 
-all: $(MBR) 
+img:	compile
+	@dd	if=/dev/zero	of=tbOS.img	bs=1024	count=1440
+	@dd	if=tbOS.bin	of=tbOS.img	seek=0	conv=notrunc
 
-%.bin : %.asm
-	nasm -O0 $< -f bin -o $@
+iso:	clean	img
+	@xorriso	-as	mkisofs	-b	tbOS.img	-o	tbOS.iso	-isohybrid-mbr	tbOS.bin	-no-emul-boot	-boot-load-size	4 ./
 
-iso: $(ISO)
-
-$(ISO) : $(FLOPPY)
-	xorriso -as mkisofs -b $< -o $@ -isohybrid-mbr $(MBR) \
-	-no-emul-boot -boot-load-size 4 ./
-
-$(FLOPPY) : $(MBR)
-	dd if=/dev/zero of=$@ bs=1024 count=1440
-	dd if=$< of=$@ seek=0 conv=notrunc
-
-test: clean $(ISO)
-	qemu-system-i386 -drive format=raw,file=$(ISO) -net none
-
-stick: $(ISO)
-	@if test -z "$(STICK)"; then \
-	 echo "*** ATTENTION: Edit Makefile first"; exit 1; fi 
-	dd if=$< of=$(STICK)
+run:
+	@qemu-system-i386	-drive	format=raw,file=tbOS.iso
 
 clean:
-	rm -f *.bin *.img *.iso *~ *.o 
+	@rm	-f	*.bin	*.img	*.iso	*~	*.o
